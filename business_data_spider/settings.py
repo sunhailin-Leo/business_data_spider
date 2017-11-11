@@ -14,6 +14,9 @@ MONGODB_PORT = 27017
 # MongoDB数据库名称
 MONGODB_NAME = 'business_data'
 
+# 自定义命令
+COMMANDS_MODULE = 'business_data_spider.commands'
+
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 # CONCURRENT_REQUESTS = 32
 

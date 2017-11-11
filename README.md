@@ -25,6 +25,10 @@ pip install -r requirements.txt
 
 ```Python
 scrapy crawlall
+
+# 如果说有报错是 No module named 'win32api'的话,请执行如下命令:
+pip install pypiwin32
+
 ```
 
 * 单个爬虫
