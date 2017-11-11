@@ -12,9 +12,10 @@ import urllib.parse as up
 
 # 第三方库
 import scrapy
+from scrapy.conf import settings
 
 
-# 商事主体基础信息 ID=56183
+# 商事主体基础信息 ID=56183 Total=1845847
 class BasicInformation(scrapy.Spider):
     name = "business_basic_info"
 
@@ -22,17 +23,11 @@ class BasicInformation(scrapy.Spider):
         # 起始地址
         self.start_urls = ['http://datagz.gov.cn/data/catalog/detail.do?method=QueryDataItem&']
 
-        # 爬虫ID
-        self._category_id = 56183
-
-        # 每一页的数量
-        self._page_max_rows = 10000
-
         # 请求页面拼接的数据
         self.post_data = {
-            "cata_id": str(self._category_id),  # 目录号
-            "rows": str(self._page_max_rows),  # 每页的数据量
-            "page": 1,  # 页码
+            "cata_id": str(settings['BASIC_INFO_ID']),  # 目录号
+            "rows": str(settings['MAX_ROWS_PER_PAGE']),  # 每页的数据量
+            "page": settings['DEFAULT_BEGIN_PAGE_NUM'],  # 页码
         }
 
         # super方法
@@ -46,6 +41,12 @@ class BasicInformation(scrapy.Spider):
     def parse(self, response):
         # 获取数据
         businesses_info = json.loads(bytes.decode(response.body))
+
+        # 判断是否数据为空
+        if len(businesses_info['rows']) == 0:
+            scrapy.Spider.close(BasicInformation, reason="All data has been collected.")
+
+        # 解析数据
         for business in businesses_info['rows']:
             # 添加数据年份和最近更新的时间戳
             business.update(dict(statistics_year=datetime.datetime.now().year))
@@ -59,3 +60,5 @@ class BasicInformation(scrapy.Spider):
             self.post_data['page'] += 1
             post_url = self.start_urls[0] + up.urlencode(self.post_data)
             yield scrapy.Request(url=post_url, method="POST", callback=self.parse)
+        else:
+            scrapy.Spider.close(BasicInformation, reason="All data has been collected.")
