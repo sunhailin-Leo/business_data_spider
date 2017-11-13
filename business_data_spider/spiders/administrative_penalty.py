@@ -9,15 +9,24 @@ import datetime
 import json
 import time
 import urllib.parse as up
+import uuid
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
+from pymongo import MongoClient
 
 
 # 广州市工商局行政处罚汇总信息，ID=35351 Total=131
 class BusinessAdministrativePenaltyInfo(scrapy.Spider):
+    # 小爬虫名
     name = "business_administrative_penalties"
+
+    # 爬虫ID
+    spider_id = uuid.uuid1()
+
+    # 初次启动的变量
+    first_start = True
 
     def __init__(self, **kwargs):
         # 起始地址
@@ -50,8 +59,21 @@ class BusinessAdministrativePenaltyInfo(scrapy.Spider):
         for penalty in penalties_info['rows']:
             # 添加数据年份和最近更新的时间戳
             penalty.update(dict(statistics_year=datetime.datetime.now().year))
-            penalty.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))
+            penalty.update(dict(last_update_time=int(round(time.time() * 1000))))
+
+            # 爬虫监控需要的数据(爬虫UUID,爬虫当前页面,爬虫总页数,爬虫总记录数)
+            penalty.update(dict(spider_id=BusinessAdministrativePenaltyInfo.spider_id))
+            penalty.update(dict(page_num=self.post_data['page']))
+            penalty.update(dict(total_page=penalties_info['total']))
+            penalty.update(dict(total_record=penalties_info['records']))
+            penalty.update(dict(start_status=BusinessAdministrativePenaltyInfo.first_start))
+
+            # 赋值给item
             data_item = penalty
+
+            # 修改启动状态
+            BusinessAdministrativePenaltyInfo.first_start = False
+
             yield data_item
 
         # 最大上限页数
@@ -61,4 +83,12 @@ class BusinessAdministrativePenaltyInfo(scrapy.Spider):
             post_url = self.start_urls[0] + up.urlencode(self.post_data)
             yield scrapy.Request(url=post_url, method="POST", callback=self.parse)
         else:
+            # 关闭时的操作(很无奈,找不到啥解决办法再parse方法里加入结束的判断)
+            col = MongoClient(host=settings['MONGODB_HOST'],
+                              port=settings['MONGODB_PORT'])[settings['MONGODB_NAME']]['Spider_Spy']
+            close_item = dict(spider_endTime=int(round(time.time() * 1000)),
+                              spider_status="ClosedOrFinished")
+            col.update({"spider_id": BusinessAdministrativePenaltyInfo.spider_id}, {'$set': close_item}, upsert=True)
+
+            # 关闭爬虫
             scrapy.Spider.close(BusinessAdministrativePenaltyInfo, reason="All data has been collected.")

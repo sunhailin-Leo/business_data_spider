@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+import time
+
 # 爬虫起始名字
 BOT_NAME = 'business_data_spider'
 
@@ -14,7 +17,7 @@ MONGODB_HOST = '127.0.0.1'
 # MongoDB数据库端口
 MONGODB_PORT = 27017
 # MongoDB数据库名称
-MONGODB_NAME = 'business_data_1'
+MONGODB_NAME = 'business_data'
 
 # 爬虫的一些公共变量设置
 # 默认起始页数
@@ -53,6 +56,14 @@ DOWNLOAD_DELAY = 2
 
 # Cookies的开关
 COOKIES_ENABLED = False
+
+# LOG配置(以后做成web框架监控再使用)
+# LOG_ENABLED = True
+# LOG_ENCODING = 'UTF-8'
+# LOG_FILE = BOT_NAME + "/logs/scrapy-spider-" \
+#            + str(int(time.mktime(datetime.datetime.now().timetuple())) * 1000) + ".log"
+# LOG_FORMAT = '%(asctime)s [%(name)s] %(filename)s %(lineno)d %(levelname)s: %(message)s'
+# LOG_LEVEL = "DEBUG"
 
 # telnet控制台(默认开启)
 # TELNETCONSOLE_ENABLED = False
