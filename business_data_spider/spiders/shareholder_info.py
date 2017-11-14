@@ -9,15 +9,23 @@ import datetime
 import json
 import time
 import urllib.parse as up
+import uuid
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
+from pymongo import MongoClient
 
 
 # 商事主体股东信息，ID=52443 Total=1150073
 class BusinessShareHolderInfo(scrapy.Spider):
     name = "business_shareholder_information"
+
+    # 爬虫ID
+    spider_id = uuid.uuid1()
+
+    # 初次启动的变量
+    first_start = True
 
     def __init__(self, **kwargs):
         # 起始地址
@@ -51,7 +59,20 @@ class BusinessShareHolderInfo(scrapy.Spider):
             # 添加数据年份和最近更新的时间戳
             shareholder.update(dict(statistics_year=datetime.datetime.now().year))
             shareholder.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))
+
+            # 爬虫监控需要的数据(爬虫UUID,爬虫当前页面,爬虫总页数,爬虫总记录数)
+            shareholder.update(dict(spider_id=BusinessShareHolderInfo.spider_id))
+            shareholder.update(dict(page_num=self.post_data['page']))
+            shareholder.update(dict(total_page=shareholders_info['total']))
+            shareholder.update(dict(total_record=shareholders_info['records']))
+            shareholder.update(dict(start_status=BusinessShareHolderInfo.first_start))
+
+            # 赋值给item
             data_item = shareholder
+
+            # 修改启动状态
+            BusinessShareHolderInfo.first_start = False
+
             yield data_item
 
         # 最大上限页数
@@ -61,4 +82,11 @@ class BusinessShareHolderInfo(scrapy.Spider):
             post_url = self.start_urls[0] + up.urlencode(self.post_data)
             yield scrapy.Request(url=post_url, method="POST", callback=self.parse)
         else:
+            # 关闭时的操作(很无奈,找不到啥解决办法再parse方法里加入结束的判断)
+            col = MongoClient(host=settings['MONGODB_HOST'],
+                              port=settings['MONGODB_PORT'])[settings['MONGODB_NAME']]['Spider_Spy']
+            close_item = dict(spider_endTime=int(round(time.time() * 1000)),
+                              spider_status="ClosedOrFinished")
+            col.update({"spider_id": BusinessShareHolderInfo.spider_id}, {'$set': close_item}, upsert=True)
+
             scrapy.Spider.close(BusinessShareHolderInfo, reason="All data has been collected.")

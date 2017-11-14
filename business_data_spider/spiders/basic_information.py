@@ -9,15 +9,23 @@ import datetime
 import json
 import time
 import urllib.parse as up
+import uuid
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
+from pymongo import MongoClient
 
 
 # 商事主体基础信息 ID=56183 Total=1845847
 class BasicInformation(scrapy.Spider):
     name = "business_basic_info"
+
+    # 爬虫ID
+    spider_id = uuid.uuid1()
+
+    # 初次启动的变量
+    first_start = True
 
     def __init__(self, **kwargs):
         # 起始地址
@@ -51,7 +59,20 @@ class BasicInformation(scrapy.Spider):
             # 添加数据年份和最近更新的时间戳
             business.update(dict(statistics_year=datetime.datetime.now().year))
             business.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))
+
+            # 爬虫监控需要的数据(爬虫UUID,爬虫当前页面,爬虫总页数,爬虫总记录数)
+            business.update(dict(spider_id=BasicInformation.spider_id))
+            business.update(dict(page_num=self.post_data['page']))
+            business.update(dict(total_page=businesses_info['total']))
+            business.update(dict(total_record=businesses_info['records']))
+            business.update(dict(start_status=BasicInformation.first_start))
+
+            # 赋值给item
             data_item = business
+
+            # 修改启动状态
+            BasicInformation.first_start = False
+
             yield data_item
 
         # 最大上限页数
@@ -61,4 +82,11 @@ class BasicInformation(scrapy.Spider):
             post_url = self.start_urls[0] + up.urlencode(self.post_data)
             yield scrapy.Request(url=post_url, method="POST", callback=self.parse)
         else:
+            # 关闭时的操作(很无奈,找不到啥解决办法再parse方法里加入结束的判断)
+            col = MongoClient(host=settings['MONGODB_HOST'],
+                              port=settings['MONGODB_PORT'])[settings['MONGODB_NAME']]['Spider_Spy']
+            close_item = dict(spider_endTime=int(round(time.time() * 1000)),
+                              spider_status="ClosedOrFinished")
+            col.update({"spider_id": BasicInformation.spider_id}, {'$set': close_item}, upsert=True)
+
             scrapy.Spider.close(BasicInformation, reason="All data has been collected.")
