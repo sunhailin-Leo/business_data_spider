@@ -22,176 +22,64 @@ class BusinessDataSpiderPipeline(object):
 
     # 管道加载item
     def process_item(self, item, spider):
+        # 独立管道入口
+        if spider.name == "business_basic_info":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+
+        elif spider.name == "business_information_year":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+
+        elif spider.name == "business_shareholder_information":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+        elif spider.name == "business_administrative_penalties":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+
+        elif spider.name == "business_abnormal":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+
+        elif spider.name == "business_honor":
+            self.pipeline_core_method(item=item, spider_name=spider.name)
+
+        return item
+
+    # 核心方法(因为每一种都是一样的只有一个变量不同而已.所以抽出来写好了)
+    def pipeline_core_method(self, item, spider_name):
         """
-        重复代码的主要核心就是：(每个爬虫对应一个管道)
+        主要核心就是：(每个爬虫对应一个管道)
         1. 创建集合连接对象
         2. 判断item长度
         3. 将item中的不属于核心数据的数据取出
         4. 将item中的核心数据写入到数据库
         5. 维护爬虫监控(监控数据写入到数据库)
-
         :param item:
-        :param spider:
-        :return:
-
+        :param spider_name:
+        :return: 没有返回值
         """
-        if spider.name == "business_basic_info":
-            # 创建数据库对象
-            col = self.db[spider.name]
 
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
+        # 创建数据库对象
+        col = self.db[spider_name]
 
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
+        # 爬虫ID
+        spider_id = item.pop('spider_id')
 
-                # 写入核心数据
-                col.insert(item)
+        # item长度作为启动和关闭的判断点
+        if len(item) > 1:
+            # 析出不要的字段数据
+            curr_page = item.pop('page_num')
+            total_page = item.pop('total_page')
+            total_record = item.pop('total_record')
+            start_status = item.pop('start_status')
 
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
+            # 写入核心数据
+            col.insert(item)
 
-        elif spider.name == "business_information_year":
-            # 创建数据库对象
-            col = self.db[spider.name]
-
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
-
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
-
-                # 写入核心数据
-                col.insert(item)
-
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
-
-        elif spider.name == "business_shareholder_information":
-            # 创建数据库对象
-            col = self.db[spider.name]
-
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
-
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
-
-                # 写入核心数据
-                col.insert(item)
-
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
-
-        elif spider.name == "business_administrative_penalties":
-            # 创建数据库对象
-            col = self.db[spider.name]
-
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
-
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
-
-                # 写入核心数据
-                col.insert(item)
-
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
-
-        elif spider.name == "business_abnormal":
-            # 创建数据库对象
-            col = self.db[spider.name]
-
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
-
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
-
-                # 写入核心数据
-                col.insert(item)
-
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
-
-        elif spider.name == "business_honor":
-            # 创建数据库对象
-            col = self.db[spider.name]
-
-            # 爬虫ID
-            spider_id = item.pop('spider_id')
-
-            # item长度作为启动和关闭的判断点
-            if len(item) > 1:
-                # 析出不要的字段数据
-                curr_page = item.pop('page_num')
-                total_page = item.pop('total_page')
-                total_record = item.pop('total_record')
-                start_status = item.pop('start_status')
-
-                # 写入核心数据
-                col.insert(item)
-
-                # 写入监控数据
-                self.spider_spy_log(spider_id=spider_id,
-                                    spider_name=spider.name,
-                                    current_page=curr_page,
-                                    total_page=total_page,
-                                    total_items_count=total_record,
-                                    is_first=start_status)
-
-        return item
+            # 写入监控数据
+            self.spider_spy_log(spider_id=spider_id,
+                                spider_name=spider_name,
+                                current_page=curr_page,
+                                total_page=total_page,
+                                total_items_count=total_record,
+                                is_first=start_status)
 
     # 爬虫监控维护
     def spider_spy_log(self, spider_id, spider_name, is_first=False,
