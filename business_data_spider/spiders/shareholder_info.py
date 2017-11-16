@@ -10,11 +10,15 @@ import json
 import time
 import urllib.parse as up
 import uuid
+from collections import OrderedDict
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
 from pymongo import MongoClient
+
+# 项目内部库
+from business_data_spider.utils.util import data_transfer_md5
 
 
 # 商事主体股东信息，ID=52443 Total=1150073
@@ -48,7 +52,7 @@ class BusinessShareHolderInfo(scrapy.Spider):
 
     def parse(self, response):
         # 获取数据
-        shareholders_info = json.loads(bytes.decode(response.body))
+        shareholders_info = json.loads(bytes.decode(response.body), object_pairs_hook=OrderedDict)
 
         # 判断是否数据为空
         if len(shareholders_info['rows']) == 0:
@@ -56,6 +60,9 @@ class BusinessShareHolderInfo(scrapy.Spider):
 
         # 解析数据
         for shareholder in shareholders_info['rows']:
+            # 增量爬虫需要用到的字段
+            shareholder.update(dict(data_md5=data_transfer_md5(data=shareholder)))
+
             # 添加数据年份和最近更新的时间戳
             shareholder.update(dict(statistics_year=datetime.datetime.now().year))
             shareholder.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))

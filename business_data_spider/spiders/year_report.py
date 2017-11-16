@@ -10,11 +10,15 @@ import json
 import time
 import urllib.parse as up
 import uuid
+from collections import OrderedDict
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
 from pymongo import MongoClient
+
+# 项目内部库
+from business_data_spider.utils.util import data_transfer_md5
 
 
 # 商事主体公司年报基本信息 ID=52776 Total=1870025
@@ -48,7 +52,7 @@ class BusinessYearReport(scrapy.Spider):
 
     def parse(self, response):
         # 获取数据
-        businesses_year_report = json.loads(bytes.decode(response.body))
+        businesses_year_report = json.loads(bytes.decode(response.body), object_pairs_hook=OrderedDict)
 
         # 判断是否数据为空
         if len(businesses_year_report['rows']) == 0:
@@ -56,6 +60,9 @@ class BusinessYearReport(scrapy.Spider):
 
         # 解析数据
         for year_report in businesses_year_report['rows']:
+            # 增量爬虫需要用到的字段
+            year_report.update(dict(data_md5=data_transfer_md5(data=year_report)))
+
             # 添加数据年份和最近更新的时间戳
             year_report.update(dict(statistics_year=datetime.datetime.now().year))
             year_report.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))
@@ -90,4 +97,3 @@ class BusinessYearReport(scrapy.Spider):
             col.update({"spider_id": BusinessYearReport.spider_id}, {'$set': close_item}, upsert=True)
 
             scrapy.Spider.close(BusinessYearReport, reason="All data has been collected.")
-

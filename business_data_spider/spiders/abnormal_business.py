@@ -10,11 +10,15 @@ import json
 import time
 import urllib.parse as up
 import uuid
+from collections import OrderedDict
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
 from pymongo import MongoClient
+
+# 项目内部库
+from business_data_spider.utils.util import data_transfer_md5
 
 
 # 商事主体经营异常名录信息，ID=56299 Total=879360
@@ -48,7 +52,7 @@ class BusinessAbnormal(scrapy.Spider):
 
     def parse(self, response):
         # 获取数据
-        abnormal_business = json.loads(bytes.decode(response.body))
+        abnormal_business = json.loads(bytes.decode(response.body), object_pairs_hook=OrderedDict)
 
         # 判断是否数据为空
         if len(abnormal_business['rows']) == 0:
@@ -56,6 +60,9 @@ class BusinessAbnormal(scrapy.Spider):
 
         # 解析数据
         for business in abnormal_business['rows']:
+            # 增量爬虫需要用到的字段
+            business.update(dict(data_md5=data_transfer_md5(data=business)))
+
             # 添加数据年份和最近更新的时间戳
             business.update(dict(statistics_year=datetime.datetime.now().year))
             business.update(dict(last_update_time=int(time.mktime(datetime.datetime.now().timetuple())) * 1000))

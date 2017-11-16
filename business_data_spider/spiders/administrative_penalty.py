@@ -10,16 +10,19 @@ import json
 import time
 import urllib.parse as up
 import uuid
+from collections import OrderedDict
 
 # 第三方库
 import scrapy
 from scrapy.conf import settings
 from pymongo import MongoClient
 
+# 项目内部库
+from business_data_spider.utils.util import data_transfer_md5
+
 
 # 广州市工商局行政处罚汇总信息，ID=35351 Total=131
 class BusinessAdministrativePenaltyInfo(scrapy.Spider):
-    # 小爬虫名
     name = "business_administrative_penalties"
 
     # 爬虫ID
@@ -49,7 +52,7 @@ class BusinessAdministrativePenaltyInfo(scrapy.Spider):
 
     def parse(self, response):
         # 获取数据
-        penalties_info = json.loads(bytes.decode(response.body))
+        penalties_info = json.loads(bytes.decode(response.body), object_pairs_hook=OrderedDict)
 
         # 判断是否数据为空
         if len(penalties_info['rows']) == 0:
@@ -57,6 +60,9 @@ class BusinessAdministrativePenaltyInfo(scrapy.Spider):
 
         # 解析数据
         for penalty in penalties_info['rows']:
+            # 增量爬虫需要用到的字段
+            penalty.update(dict(data_md5=data_transfer_md5(data=penalty)))
+
             # 添加数据年份和最近更新的时间戳
             penalty.update(dict(statistics_year=datetime.datetime.now().year))
             penalty.update(dict(last_update_time=int(round(time.time() * 1000))))

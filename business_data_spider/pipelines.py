@@ -2,9 +2,7 @@
 
 
 # 内部库
-import datetime
 import time
-
 from collections import OrderedDict
 
 # 第三方库
@@ -14,11 +12,14 @@ from scrapy.conf import settings
 
 class BusinessDataSpiderPipeline(object):
     def __init__(self):
-        # 连接到数据库
+        # 连接到MongoDB数据库
         _conn = MongoClient(host=settings['MONGODB_HOST'], port=settings['MONGODB_PORT'])
 
-        # 创建数据库名称
+        # 创建MongoDB数据库名称(数据源)
         self.db = _conn[settings['MONGODB_NAME']]
+
+        # MD5数据库
+        self.md5_db = _conn[settings['SECOND_MONGODB_NAME']]
 
     # 管道加载item
     def process_item(self, item, spider):
@@ -56,8 +57,8 @@ class BusinessDataSpiderPipeline(object):
         :return: 没有返回值
         """
 
-        # 创建数据库对象
-        col = self.db[spider_name]
+        # 创建数据源数据库对象
+        col_src = self.db[spider_name]
 
         # 爬虫ID
         spider_id = item.pop('spider_id')
@@ -70,8 +71,11 @@ class BusinessDataSpiderPipeline(object):
             total_record = item.pop('total_record')
             start_status = item.pop('start_status')
 
+            # 增量爬虫御用字段
+            md5_data = item.pop('data_md5')
+
             # 写入核心数据
-            col.insert(item)
+            col_src.insert(item)
 
             # 写入监控数据
             self.spider_spy_log(spider_id=spider_id,
@@ -80,6 +84,11 @@ class BusinessDataSpiderPipeline(object):
                                 total_page=total_page,
                                 total_items_count=total_record,
                                 is_first=start_status)
+
+            # 写入MD5数据
+            self.incremental_spider_data(spider_name=spider_name,
+                                         data_id=item['ZCH'],
+                                         data_md5=md5_data)
 
     # 爬虫监控维护
     def spider_spy_log(self, spider_id, spider_name, is_first=False,
@@ -115,5 +124,24 @@ class BusinessDataSpiderPipeline(object):
         try:
             # 写入数据库(需要使用MongoDB中的upsert功能)
             col.update({"spider_id": spider_id}, {'$set': spy_order}, upsert=True)
+        except Exception as err:
+            print(err)
+
+    # 增量爬虫需要的数据
+    def incremental_spider_data(self, spider_name, data_id, data_md5):
+
+        # 创建MD5数据源库对象
+        col_md5 = self.db[spider_name + "_md5"]
+
+        # 创建一个有序字典
+        md5_order_dict = OrderedDict()
+        # 基本所有的表都有这个字段，注册号
+        md5_order_dict['id'] = data_id
+        # 数据的MD5值
+        md5_order_dict['md5_value'] = data_md5
+
+        try:
+            # 写入
+            col_md5.insert(md5_order_dict)
         except Exception as err:
             print(err)

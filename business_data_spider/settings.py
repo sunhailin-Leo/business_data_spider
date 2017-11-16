@@ -18,6 +18,8 @@ MONGODB_HOST = '127.0.0.1'
 MONGODB_PORT = 27017
 # MongoDB数据库名称
 MONGODB_NAME = 'business_data'
+# 存放MD5的数据库名称
+SECOND_MONGODB_NAME = "business_data_md5"
 
 # 爬虫的一些公共变量设置
 # 默认起始页数
