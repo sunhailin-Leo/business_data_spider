@@ -85,10 +85,18 @@ class BusinessDataSpiderPipeline(object):
                                 total_items_count=total_record,
                                 is_first=start_status)
 
-            # 写入MD5数据
-            self.incremental_spider_data(spider_name=spider_name,
-                                         data_id=item['ZCH'],
-                                         data_md5=md5_data)
+            # 特殊处理
+            if spider_name != "business_administrative_penalties":
+                """
+                business_administrative_penalties这个爬虫返回的数据不太复合结构型数据.
+                因为这个数据是属于类文档型的(没有唯一标识符),以一种纯记录的类型进行存储,
+                所以这个爬虫的增量爬虫的实现意义不大,而且目前这个爬虫在网页上的记录暂时只
+                有131条,所以做增量爬虫并不会对速度影响很大.
+                """
+                # 写入MD5数据
+                self.incremental_spider_data(spider_name=spider_name,
+                                             data_id=item['ZCH'],
+                                             data_md5=md5_data)
 
     # 爬虫监控维护
     def spider_spy_log(self, spider_id, spider_name, is_first=False,
@@ -131,7 +139,7 @@ class BusinessDataSpiderPipeline(object):
     def incremental_spider_data(self, spider_name, data_id, data_md5):
 
         # 创建MD5数据源库对象
-        col_md5 = self.db[spider_name + "_md5"]
+        col_md5 = self.md5_db[spider_name + "_md5"]
 
         # 创建一个有序字典
         md5_order_dict = OrderedDict()

@@ -9,5 +9,5 @@ import hashlib
 
 # 将json数据转成字符串格式后进行
 def data_transfer_md5(data):
-    md5_str = hashlib.md5(str(data).encode("gb2312")).hexdigest()
+    md5_str = hashlib.md5(str(data).encode("UTF-8")).hexdigest()
     return md5_str
