@@ -7,7 +7,7 @@ import time
 BOT_NAME = 'business_data_spider'
 
 # Scrapy将寻找爬虫的模块列表
-SPIDER_MODULES = ['business_data_spider.spiders']
+SPIDER_MODULES = ['business_data_spider.spiders', 'business_data_spider.spiders.incremental_spider']
 
 # 模块在哪里使用genspider命令创建新的爬虫
 NEWSPIDER_MODULE = 'business_data_spider.spiders'
@@ -20,8 +20,12 @@ MONGODB_PORT = 27017
 MONGODB_NAME = 'business_data'
 # 存放MD5的数据库名称
 SECOND_MONGODB_NAME = "business_data_md5"
+# 存放监控数据的数据库名称
+SPY_SPIDER_MONGODB_NAME = "business_spy"
 
 # 爬虫的一些公共变量设置
+# 爬虫默认地址
+URL = 'http://datagz.gov.cn/data/catalog/detail.do?method=QueryDataItem&'
 # 默认起始页数
 DEFAULT_BEGIN_PAGE_NUM = 1
 # 每页数据最大的行数

@@ -21,6 +21,9 @@ class BusinessDataSpiderPipeline(object):
         # MD5数据库
         self.md5_db = _conn[settings['SECOND_MONGODB_NAME']]
 
+        # 监控数据库
+        self.spy_db = _conn[settings['SPY_SPIDER_MONGODB_NAME']]
+
     # 管道加载item
     def process_item(self, item, spider):
         # 独立管道入口
@@ -103,7 +106,7 @@ class BusinessDataSpiderPipeline(object):
                        current_page="", total_page="", total_items_count="",):
 
         # 创建一个MongoDB集合对象
-        col = self.db["Spider_Spy"]
+        col = self.spy_db["Spider_Spy"]
         # 创建唯一索引
         col.ensure_index('spider_id', unique=True)
 
