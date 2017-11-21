@@ -90,7 +90,7 @@ class BusinessHonor(scrapy.Spider):
         else:
             # 关闭时的操作(很无奈,找不到啥解决办法再parse方法里加入结束的判断)
             col = MongoClient(host=settings['MONGODB_HOST'],
-                              port=settings['MONGODB_PORT'])[settings['MONGODB_NAME']]['Spider_Spy']
+                              port=settings['MONGODB_PORT'])[settings['SPY_SPIDER_MONGODB_NAME']]['Spider_Spy']
             close_item = dict(spider_endTime=int(round(time.time() * 1000)),
                               spider_status="ClosedOrFinished")
             col.update({"spider_id": BusinessHonor.spider_id}, {'$set': close_item}, upsert=True)
