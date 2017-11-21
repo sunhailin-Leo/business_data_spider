@@ -8,6 +8,7 @@ from collections import OrderedDict
 # 第三方库
 from pymongo import MongoClient
 from scrapy.conf import settings
+from scrapy.exceptions import DropItem
 
 
 class BusinessDataSpiderPipeline(object):
@@ -24,6 +25,9 @@ class BusinessDataSpiderPipeline(object):
         # 监控数据库
         self.spy_db = _conn[settings['SPY_SPIDER_MONGODB_NAME']]
 
+        # 年报数据去重
+        self.year_report_set = set()
+
     # 管道加载item
     def process_item(self, item, spider):
         # 独立管道入口
@@ -31,10 +35,16 @@ class BusinessDataSpiderPipeline(object):
             self.pipeline_core_method(item=item, spider_name=spider.name)
 
         elif spider.name == "business_information_year":
-            self.pipeline_core_method(item=item, spider_name=spider.name)
+            if (item['NBND'] in self.year_report_set) and (item['UPDATE_TIME'] in self.year_report_set):
+                raise DropItem("Duplicate item found: %s" % item)
+            else:
+                self.year_report_set.add(item['NBND'])
+                self.year_report_set.add(item['UPDATE_TIME'])
+                self.pipeline_core_method(item=item, spider_name=spider.name)
 
         elif spider.name == "business_shareholder_information":
             self.pipeline_core_method(item=item, spider_name=spider.name)
+
         elif spider.name == "business_administrative_penalties":
             self.pipeline_core_method(item=item, spider_name=spider.name)
 
