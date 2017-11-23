@@ -17,6 +17,11 @@
 * 开发环境
     * 系统版本： Win10 x64
     * Python版本: Python 3.4.4
+    * Python库版本详情:
+        * flask: 0.12.2
+        * Scrapy: 1.4.0
+        * pymongo: 3.5.1
+        * schedule: 0.5.0(暂时还在实验阶段)
 
 ---
 
@@ -54,6 +59,20 @@ scrapy crawl <你选择的爬虫名称>
 
 ```
 
+* 增量爬虫
+
+```Python
+# 增量暂时有些问题 --- 需要爬取完全量的之后才有用
+scrapy crawl spider_incremental
+```
+
+* Flask 查询接口
+
+```Python
+# 到backend的路径下. 后续会补充一个外部启动接口,不需要进入到项目根目录下
+python spider_backend.py
+```
+
 ---
 
 <h3 id="issue">技术点、功能及一些注意事项</h3>
@@ -68,11 +87,12 @@ scrapy crawl <你选择的爬虫名称>
     1. 异步多线程获取所需要的政务数据(公司主体信息等等)
     2. 设计了监控模块(爬虫监控状态)
     3. 设置了LOG的输出到文件(但是不能同时输出到控制台和文件)
+    4. 加入了Flask的接口层,可以调用接口进行查询,接口文档见下
 
 注意事项:
     1. 所有关于时间戳的统统精确到毫秒级
        (秒级的话如果只有一页的时候,监控那张表的开始和结束时间会显示在同一秒内完)
-    2. 目前监控模块只在administrative_penalty.py中实现
+    2. 目前监控模块全部已经实现
 
 ```
 
@@ -94,6 +114,8 @@ scrapy crawl <你选择的爬虫名称>
 
 * 暂时使用第二种方法,设计MongoDB存储(完成于:2017-11-16)
 * 已经初步将所有爬虫以及管道中新增的MD5数据存储的方法写好(完成于:2017-11-16)
+* 存储和校验MD5模块已经编写完成.
+    * 校验方面,由于有三个表的数据有些问题,暂时搁置一下(处罚信息没有唯一id去写入MD5表,不正常企业和企业年报存在单个id出现多次的数据)(完成于:2017-11-20)
 
 ---
 
@@ -103,12 +125,101 @@ scrapy crawl <你选择的爬虫名称>
 
 ~~1. 将监控模块全覆盖~~
 
-2. 增量爬虫的设计(*****)
+2. 增量爬虫的设计(*****) ---- 遇到严重的问题(解决了部分的增量爬虫)
 
 3. 设计个通用爬虫,针对于本项目网站的政务数据(**)
 
 4. 研究下Scrapy的日志系统,看看是否能够拆分每一个爬虫对应每一个日志(**)
 
-5. 设计利用flask-restful + vue-admin做一个爬虫监控平台(***)
+~~5. 设计利用flask-restful + vue-admin做一个爬虫监控平台(***)~~
 
 ---
+
+<h3 id="RestFulApi">接口文档</h3>
+
+
+<h4>1. 监控状态列表</h4>
+
+<h5>URI: `/v1/spider_list`</h5>
+
+<h5>METHOD: `GET`</h5>
+
+<h5>Authentication: 无</h5>
+
+<strong>注：sid是任务ID号可以为空;pn是页码,不能为空;r是每页的条数,不能为空</strong>
+
+Request:
+```HTML
+
+{
+	"sid": "",
+	"pn": 1
+	"r": 6
+}
+
+```
+
+Response:
+```HTML
+
+{
+  "count": 6,
+  "data": [
+    {
+      "spider_all_items": 131,
+      "spider_createTime": 1510896834294,
+      "spider_currPage": 1,
+      "spider_endTime": 1510896834604,
+      "spider_id": "e5e1c8ee-cb58-11e7-a088-f82819e1bcfa",
+      "spider_name": "business_administrative_penalties",
+      "spider_status": "ClosedOrFinished",
+      "total_page": 1
+    }
+  ],
+  "msg": "Success",
+  "status": true
+}
+
+```
+
+---
+
+<h4>1. 查询</h4>
+
+<h5>URI: `/v1/seaech`</h5>
+
+<h5>METHOD: `GET`</h5>
+
+<h5>Authentication: 无</h5>
+
+<strong>注：name可以为空,返回全部;name不为空则返回具体的信息</strong>
+
+Request:
+```HTML
+{
+	"name": "business_shareholder_information"
+}
+```
+
+Response:
+```HTML
+
+{
+  "count": 6,
+  "data": [
+    {
+      "spider_all_items": 1150073,
+      "spider_createTime": 1510896836079,
+      "spider_currPage": 116,
+      "spider_endTime": 1510912460884,
+      "spider_id": "e5e2174a-cb58-11e7-b48f-f82819e1bcfa",
+      "spider_name": "business_shareholder_information",
+      "spider_status": "ClosedOrFinished",
+      "total_page": 116
+    }
+  ],
+  "msg": "Success",
+  "status": true
+}
+
+```

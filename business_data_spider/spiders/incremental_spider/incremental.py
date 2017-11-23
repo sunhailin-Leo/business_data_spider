@@ -6,6 +6,7 @@ Created on 2017年11月10日
 
 # 系统库
 import json
+import logging
 import urllib.parse as up
 from collections import OrderedDict
 
@@ -16,6 +17,12 @@ from pymongo import MongoClient
 
 # 项目内部库
 from business_data_spider.utils.util import data_transfer_md5
+
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S')
+logger = logging.getLogger()
 
 
 # 增量爬虫
@@ -42,7 +49,10 @@ class Incremental(scrapy.Spider):
 
         # 数据库链接
         self.db = MongoClient(host=settings['MONGODB_HOST'],
-                              port=settings['MONGODB_PORT'])[settings['SECOND_MONGODB_NAME']]
+                              port=settings['MONGODB_PORT'])[settings['MONGODB_NAME']]
+
+        self.md5_db = MongoClient(host=settings['MONGODB_HOST'],
+                                  port=settings['MONGODB_PORT'])[settings['SECOND_MONGODB_NAME']]
 
         # 计数器变量
         self.spider_id = 0
@@ -60,8 +70,9 @@ class Incremental(scrapy.Spider):
         if cur_spider_name == "business_abnormal" or cur_spider_name == "business_information_year":
             return
 
-        # 数据库连接
-        col = self.db[cur_spider_name + "_md5"]
+        # 数据库连接(原始数据源和MD5数据源)
+        col = self.db[cur_spider_name]
+        md5_col = self.md5_db[cur_spider_name + "_md5"]
 
         # 获取数据
         results = json.loads(bytes.decode(response.body), object_pairs_hook=OrderedDict)
@@ -76,7 +87,13 @@ class Incremental(scrapy.Spider):
 
             # 判断是否出现过
             if col.find({"md5_value": data_md5}).count() == 0:
-                print("新增数据!")
+                logger.info("新增数据: " + str(spider_result))
+                try:
+                    # 更新原始数据和MD5数据
+                    col.update({"ZCH": spider_result['ZCH']}, spider_result)
+                    md5_col.update({"id", spider_result['ZCH']}, {"id": spider_result['ZCH'], "value": data_md5})
+                except Exception as err:
+                    logger.debug(err)
 
         # 下一个爬虫
         for url in enumerate(self.url_pool[1:]):
