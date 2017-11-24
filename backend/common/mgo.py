@@ -11,7 +11,7 @@ from pymongo import MongoClient
 class MgoConf:
     def __init__(self):
         _conn = MongoClient(host="127.0.0.1", port=27017)
-        self.db = _conn['business_data']
+        self.db = _conn['business_spy']
 
     # CRUD操作
 
