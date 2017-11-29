@@ -22,23 +22,40 @@
         * Scrapy: 1.4.0
         * pymongo: 3.5.1
         * schedule: 0.5.0(暂时还在实验阶段)
+    * 前端(Vue + elementUI):
+        * 需要Node环境,开发环境是node 8.9.0
+        * 前端项目的依赖在frontend里面的package.json中
+            * 主要的一些依赖:
+                * vue: 2.2.2
+                * vue-router: 2.3.0
+                * axios: 0.15.3
+                * element-ui: 1.4.10
+                * vuex: 2.0.0-rc.6
+                * webpack: 2.2.1
 
 ---
 
 * 安装方式
 
-```Python
-# 在项目根目录运行安装
-pip install -r requirements.txt
-```
+    * 爬虫和Flask
+    ```Python
+    # 在项目根目录运行安装
+    pip install -r requirements.txt
+    ```
+
+    * 前端
+    ```Shell
+    # 在frontend目录下的是前端页面
+    npm run dev
+    ```
 
 ---
 
-* 运行方式
+* 运行方式(后端Flask运行在8080端口,前端页面运行在9000端口)
 
-* 在根目录下的business_data_spider文件夹中(即和scarpy.cfg在同一路径下)
-* Windows下按住shift + 右键打开命令行, Linux 就cd 到那个路径下
-* 全量爬虫
+    * 在根目录下的business_data_spider文件夹中(即和scarpy.cfg在同一路径下)
+    * Windows下按住shift + 右键打开命令行, Linux 就cd 到那个路径下
+    * 全量爬虫
 
 ```Python
 scrapy crawlall
@@ -71,6 +88,19 @@ scrapy crawl spider_incremental
 ```Python
 # 到backend的路径下. 后续会补充一个外部启动接口,不需要进入到项目根目录下
 python spider_backend.py
+```
+
+* 前端页面Vue + elementUI(在frontend文件夹内)
+
+```Shell
+# 第一步安装依赖
+npm install (网速一般可以使用cnpm.安装方法自行百度)
+
+# 调试
+npm run dev
+
+# 打包
+npm run build
 ```
 
 ---
